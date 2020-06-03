@@ -22,12 +22,17 @@ class AlienInvasion:
 		while True:
 			self._check_events()
 			self.ship.update()
-			self.bullets.update()
+			self._update_bullets()
+			collisions = pygame.sprite.groupcollide(self.bullets, self.aliens, True, True )
+			self._update_aliens()
 			for bullet in self.bullets.copy():
 				if bullet.rect.bottom <= 0:
 					self.bullets.remove(bullet)
+			self.bullets.update()
 			self._update_screen()
-
+	def _update_aliens(self):
+		self._check_fleet_edges()
+		self.aliens.update()
 	def _check_events(self):
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
@@ -50,11 +55,25 @@ class AlienInvasion:
 		available_space_x = self.settings.screen_width - (2 * alien_width)
 		number_aliens_x = available_space_x // (2*alien_width)
 		ship_height = self.ship.rect.height
-		available_space_y = self.settings.screen_height - (3 * alien_height - ship_height)
+		available_space_y = self.settings.screen_height - (2 * alien_height - ship_height)
 		number_of_rows = available_space_y // (2 * alien_height)
 		for row_number in range (number_of_rows):
 			for alien_number in range (number_aliens_x):
 				self._create_alien(alien_number, row_number)
+	def _check_fleet_edges(self):
+		for alien in self.aliens.sprites():
+			if alien.check_edges():
+				self._change_fleet_direction()
+				break
+	def _change_fleet_direction(self):
+		for alien in self.aliens.sprites():
+			alien.rect.y += self.settings.fleet_drop_speed
+		self.settings.fleet_direction *= -1
+	def _update_bullets(self):
+		self.bullets.update()
+		for bullet in self.bullets.copy():
+			if bullet.rect.bottom <= 0:
+				self.bullets.remove(bullet)
 
 			
 	def _create_alien(self, alien_number, row_number):
@@ -65,13 +84,13 @@ class AlienInvasion:
 		alien.rect.y = alien.rect.height + 2 * alien.rect.height * row_number
 		self.aliens.add(alien)
 
-
 	def _fire(self):
 		new_bullet = Bullet(self)
 		self.bullets.add(new_bullet)
 	def _update_screen(self):
 		self.screen.fill(self.settings.bg_color)
 		self.ship.blitme()
+		
 		for bullet in self.bullets.sprites():
 			bullet.draw_b()
 		self.aliens.draw(self.screen)
